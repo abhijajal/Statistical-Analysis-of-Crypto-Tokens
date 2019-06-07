@@ -1,0 +1,62 @@
+---
+title: "Tenxpay Token"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r token}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(fitdistrplus)
+token <- read_delim('networktenxpayTX.txt', delim = " ", col_names = F)
+print(token)
+names(token) <- c('fromID', 'toID', 'unixTime', 'tokenAmount')
+print(token)
+decimals<-10^18
+supply<- 205218255.948577763364408207
+totalSupply<- decimals * supply
+print(totalSupply)
+filteredtoken <- filter(token,tokenAmount < totalSupply)
+print(filteredtoken)
+filteredtoken <- filter(token,fromID != toID)
+print(filteredtoken)
+NoOfOutliers <- count(token)-count(filteredtoken);
+print(NoOfOutliers)
+
+result <-filteredtoken %>% count(fromID,toID, sort = FALSE)
+names(result) <- c('fromID', 'toID', 'Occurences')
+names(result)
+sum(result$Occurences)
+result$Occ = 1
+result_new <- aggregate(result$Occ, by=list(result$Occurences), FUN=sum)
+
+names(result_new) <- c('Number','Occurences')
+head(result_new)
+
+hist(result_new$Number, breaks = 100, col = c("blue"), xlab = "Number of Occurences", ylab = "Occurences of Occurences",main = "Plot for token token")
+
+fit.exp.result <- fitdist(result_new$Number, 'exp')
+fit.gamma.result <- fitdist(result_new$Number, 'gamma',lower = c(0, 0), start = list(scale = 1, shape = 1))
+fit.geometric.result <- fitdist(result_new$Number, 'geom')
+fit.log.result <- fitdist(result_new$Number, 'logis')
+fit.lnorm.result <- fitdist(result_new$Number, 'lnorm')
+fit.nbinom.result <- fitdist(result_new$Number, 'nbinom')
+fit.norm.result <- fitdist(result_new$Number, 'norm')
+fit.pois.result <- fitdist(result_new$Number, 'pois')
+fit.unif.result <- fitdist(result_new$Number, 'unif')
+fit.weibull.result <- fitdist(result_new$Number, 'weibull')
+
+gofstat(list(fit.weibull.result, fit.gamma.result, fit.lnorm.result, fit.exp.result, fit.log.result))
+plot(fit.lnorm.result)
+
+
+```
+
+## R Markdown
+
+
+```{r cars}
+```
+

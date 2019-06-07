@@ -1,0 +1,102 @@
+---
+title: "tokenToken"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r token}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(fitdistrplus)
+library(plyr)
+token <- read_delim('networkbatTX.txt', delim = " ", col_names = F)
+print(token)
+names(token) <- c('fromID', 'toID', 'unixTime', 'tokenAmount')
+print(token)
+decimals<-10^18
+supply<- 1.5*10^9
+totalSupply<- decimals * supply
+print(totalSupply)
+filteredtoken <- filter(token,tokenAmount < totalSupply)
+print(filteredtoken)
+filteredtoken <- filter(token,fromID != toID)
+print(filteredtoken)
+NoOfOutliers <- count(token)-count(filteredtoken);
+print(NoOfOutliers)
+
+result <-filteredtoken %>% count(fromID,toID, sort = FALSE)
+names(result) <- c('fromID', 'toID', 'Occurences')
+names(result)
+sum(result$Occurences)
+result$Occ = 1
+result_new <- aggregate(result$Occ, by=list(result$Occurences), FUN=sum)
+
+names(result_new) <- c('Number','Occurences')
+head(result_new)
+
+hist(result_new$Number, breaks = 100, col = c("blue"), xlab = "Number of Occurences", ylab = "Occurences of Occurences",main = "Plot for token token")
+
+fit.exp.result <- fitdist(result_new$Number, 'exp')
+fit.gamma.result <- fitdist(result_new$Number, 'gamma',lower = c(0, 0), start = list(scale = 1, shape = 1))
+fit.geometric.result <- fitdist(result_new$Number, 'geom')
+fit.log.result <- fitdist(result_new$Number, 'logis')
+fit.lnorm.result <- fitdist(result_new$Number, 'lnorm')
+fit.nbinom.result <- fitdist(result_new$Number, 'nbinom')
+fit.norm.result <- fitdist(result_new$Number, 'norm')
+fit.pois.result <- fitdist(result_new$Number, 'pois')
+fit.unif.result <- fitdist(result_new$Number, 'unif')
+fit.weibull.result <- fitdist(result_new$Number, 'weibull')
+
+gofstat(list(fit.weibull.result, fit.gamma.result, fit.lnorm.result, fit.exp.result, fit.log.result))
+plot(fit.lnorm.result)
+names(filteredtoken) <- c('fromID', 'toID', 'TimeStamp', 'TokenAmount')
+filteredtoken
+filteredtoken$TokenAmount<-(filteredtoken$TokenAmount)/(10^18)
+Time<-as.Date(as.POSIXct(filteredtoken$TimeStamp, origin="1970-01-01"))
+filteredtoken$TimeStamp<-Time
+filteredtoken
+
+tokenData <- read_delim('bat', delim = "\t", col_names = T)
+tokenData
+names(tokenData)<-c("TimeStamp","Open","High", "Low", "Close","Volume","MarketCap")
+tokenData$TimeStamp<-as.Date(tokenData$TimeStamp,"%m/%d/%Y")
+tokenData$MarketCap <- as.numeric(gsub(",","",tokenData$MarketCap))
+tokenData$MarketCap<-as.double(tokenData$MarketCap)
+tokenData
+
+filteredtoken <- filteredtoken[order( -filteredtoken$TokenAmount),] 
+filteredtoken
+top_buyers<-head(filteredtoken, 25)
+top_buyers
+top_buyers$fromID<-NULL
+top_buyers
+tokenData$Open<-NULL
+tokenData$High<-NULL
+tokenData$Low<-NULL
+tokenData$Close<-NULL
+tokenData
+TopBuyerData<-join(top_buyers, tokenData) 
+TopBuyerData
+TopBuyerData$percentage<-(TopBuyerData$TokenAmount/TopBuyerData$MarketCap)*100
+TopBuyerData<- subset(TopBuyerData,percentage<100)
+TopUniqueBuyers<-unique(TopBuyerData)
+TopUniqueBuyers
+message("K=",nrow(TopUniqueBuyers))
+cor.test(TopUniqueBuyers$TokenAmount,TopUniqueBuyers$Volume)
+
+linearModel <- lm(formula= TokenAmount ~ Volume+MarketCap, data=TopUniqueBuyers) 
+linearModel <- lm(TokenAmount ~ Volume, data=TopUniqueBuyers) 
+linearModel
+summary(linearModel)
+plot(linearModel)
+
+```
+
+## R Markdown
+
+
+```{r cars}
+```
+
